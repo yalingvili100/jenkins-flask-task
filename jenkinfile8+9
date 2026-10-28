@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+    stages {
+        stage('Code Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/yalingvili100/jenkins-flask-task.git'
+            }
+        }
+        stage('Docker Build+Tag') {
+            steps {
+                sh 'docker build -t yalingvili/my-flask-app:latest .'
+            }
+        }
+        stage('Docker Push'){
+            steps{
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]){
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    docker push yalingvili/my-flask-app:latest
+                    '''
+                }
+            }
+        }
+        stage('Docker Run'){
+            steps{
+                sh 'docker run -d -p 5000:5000 yalingvili/my-flask-app:latest'
+            }
+        }
+    }
+}
